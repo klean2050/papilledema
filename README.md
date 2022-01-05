@@ -1,3 +1,1 @@
-# chla
-
-Detection of Papilledema with Deep Learning
+# Detection of Papilledema with Deep Learning
