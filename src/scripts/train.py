@@ -9,10 +9,6 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, roc_auc_score
 
-from ..model.dataset import PapDataset
-from ..model.models import *
-
-
 def train_model(model, dataloaders, criterion, optimizer, lens, num_epochs, mode="multiple"):
 
     since = time.time()
@@ -133,7 +129,7 @@ num_classes = 2
 batch_size = 32
 num_epochs = 50
 k_folds = 10
-data_dir = "../data/cropped_img"
+data_dir = "/data/avramidi/chla/redcap_data/temp/"
 feature_extract = False
 optos = False
 
