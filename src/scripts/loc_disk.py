@@ -1,12 +1,21 @@
 import os, numpy as np, cv2 as cv
 import matplotlib.pyplot as plt, pandas as pd
 from skimage import measure
+from skimage.exposure import equalize_adapthist
 from tqdm import tqdm
-from PIL import Image, ImageEnhance
+from PIL import Image
 
-p = "../data/"
-metadata = pd.read_csv(p + "metadata.csv")
-image_paths = [p + "redcap_img/" + path for path in os.listdir(p + "redcap_img/")]
+def make_clahe(img):
+    clahe = cv.createCLAHE()
+    new_img = img.copy()
+    for c in range(3):
+        new_img[..., c] = clahe.apply(img[..., c])
+    return new_img
+
+
+p = "data/documents/"
+metadata = pd.read_csv("data/metadata.csv")
+image_paths = [p + path for path in os.listdir(p)]
 
 optos = []
 for image in image_paths:
@@ -19,22 +28,19 @@ for image in image_paths:
 
 stgs = {"op": 30, "cl": 50}
 kernel = lambda x: np.ones((x, x), np.uint8)
-out_folder = "../data/cropped_img/"
+out_folder = "data/cropped/"
 
 for i in tqdm(os.listdir(p)):
 
     if i in optos:
         continue
     j = cv.imread(p + i)  # BGR
+    clahe = cv.createCLAHE()
 
     reg = []
     for channel in [-1, -3]:
         im = j[..., channel]
-
-        image = Image.fromarray(im)
-        enhancer = ImageEnhance.Contrast(image)
-        im = enhancer.enhance(1.5)
-        im = np.array(im)
+        im = clahe.apply(im)
 
         t = 0.1 * np.mean(im.ravel())
         _, img = cv.threshold(im, int(t), 255, cv.THRESH_BINARY)
@@ -69,6 +75,7 @@ for i in tqdm(os.listdir(p)):
             bubble = regions[np.argmax(areas)]
             y0, x0, y, x = bubble.bbox
             m = plt.imread(p + i)  # RGB
+            m = make_clahe(m)
             plt.imsave(out_folder + i, m[y0 - 300 : y + 300, x0 - 300 : x + 300])
             break
         except:
@@ -76,6 +83,7 @@ for i in tqdm(os.listdir(p)):
                 # save cropped image from step 1
                 y0, x0, y, x = rbubble.bbox
                 m = plt.imread(p + i)  # RGB
+                m = make_clahe(m)
                 try:
                     plt.imsave(out_folder + i, m[y0 + 500 : y - 500, x0 + 500 : x - 500])
                 except:

@@ -37,7 +37,7 @@ class PapDataset(Dataset):
             if int(name[0]) not in self.subjects:
                 continue
 
-            self.dataset.append(plt.imread(image))  # RGB
+            self.dataset.append(image)
             self.targets.append(label)
             self.names.append("_".join(name))
 
@@ -46,7 +46,7 @@ class PapDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        sample = self.dataset[idx]
+        sample = plt.imread(self.dataset[idx])
         sample = self.apply_transforms(sample)
         for s in range(len(sample)):
             sample[s] = Image.fromarray(np.uint8(sample[s]))
