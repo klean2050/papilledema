@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import division
-import torch, torch.nn as nn, os, time
-import pandas as pd, copy, numpy as np
+import torch, torch.nn as nn, time
+import os, copy, numpy as np
 import matplotlib.pyplot as plt, cv2 as cv
 import torch.optim as optim
 import torch.nn.functional as F
@@ -10,6 +10,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, roc_auc_score
 
 from src.model import *
+
+cosine = lambda x, y: 1.0 - F.cosine_similarity(x, y)
+contrast1 = nn.TripletMarginWithDistanceLoss(distance_function=cosine)
+contrast2 = nn.TripletMarginWithDistanceLoss(distance_function=cosine)
+
+os.environ['CUDA_VISIBLE_DEVICES'] = "2"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def train_model(model, dataloaders, criterion, optimizer, lens, num_epochs, mode="multiple"):
 
@@ -23,7 +30,7 @@ def train_model(model, dataloaders, criterion, optimizer, lens, num_epochs, mode
         vprint("\nEpoch {}/{}".format(epoch, num_epochs))
         vprint("-" * 11)
 
-        for phase in ["train", "val"]:
+        for phase in ["train", "valid"]:
             if phase == "train":
                 model.train()
             else:
@@ -61,10 +68,10 @@ def train_model(model, dataloaders, criterion, optimizer, lens, num_epochs, mode
 
             epoch_loss = running_loss / lens[phase]
             epoch_acc = running_corrects.double() / lens[phase]
-            vprint("{} Loss: {:.4f} Acc: {:.3f}".format(phase, epoch_loss, epoch_acc))
+            vprint("{} loss: {:.4f} Acc: {:.3f}".format(phase, epoch_loss, epoch_acc))
 
             # deep copy the model
-            if phase == "val":
+            if phase == "valid":
                 val_acc_history.append(epoch_acc)
                 if epoch_loss < best_loss:
                     if epoch < 5 and mode == "multiple":
@@ -126,46 +133,10 @@ def test_model(model, dataset, mode="multiple", sal=False):
     auc = roc_auc_score(targets, outs)
     ci = 1.96 * np.sqrt((auc * (1 - auc)) / len(outs))
     print("\n" + classification_report(targets, outs, digits=3))
-    print("\nAUC: {:.3f} +/- {:.3f}".format(auc, np.clip(ci, 0, 1)))
+    print("AUC: {:.3f} +/- {:.3f}".format(auc, np.clip(ci, 0, 1)))
 
 
-os.environ['CUDA_VISIBLE_DEVICES'] = "2"
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-num_classes = 2
-batch_size = 64
-num_epochs = 50
-k_folds = 10
-data_dir = "data/cropped/"
-feature_extract = False
-optos = False
-
-# data preprocessing
-subjects, targets = [], []
-metadata = pd.read_csv("/".join(data_dir.split("/")[:-2]) + "/metadata.csv")
-image_paths = [data_dir + path for path in os.listdir(data_dir)]
-
-for image in image_paths:
-    name = image.split("/")[-1].split(".")[0].split("_")
-    index, visit = int(name[0]), name[1]
-    subject_row = metadata.loc[metadata["record_id"] == index]
-    camera = subject_row[f"{visit}_camera"].values[0]
-    if optos and camera != 4:
-        continue
-    if not optos and camera == 4:
-        continue
-    # papilledema: 1 | pseudo: 2
-    label = subject_row["diagnosis"].values[0]
-    label = int(label) - 1
-    targets.append(label)
-    subjects.append((index, label))
-
-print(f"Subjects: {len(set(subjects))}, Images: {len(subjects)}, Pseudo: {sum(targets)}")
-
-for fold in range(k_folds):
-
-    print("\n------------------------------")
-    print(f"FOLD {fold}")
-    print("------------------------------")
+def train_fold(root, subjects, batch_size, epochs):
 
     train_s, valid_s, y, _ = train_test_split(
         [v[0] for v in list(set(subjects))], [v[1] for v in list(set(subjects))], test_size=0.2
@@ -175,29 +146,26 @@ for fold in range(k_folds):
     weights = torch.tensor(weights).to(device)
     criterion = nn.CrossEntropyLoss(weight=weights)
 
-    tr_dataset = PapDataset(data_dir, train_s, train=True)
-    te_dataset = PapDataset(data_dir, valid_s, train=False)
+    tr_dataset = PapDataset(root, train_s, train=True)
+    te_dataset = PapDataset(root, valid_s, train=False)
 
     trainloader = DataLoader(tr_dataset, batch_size=batch_size, num_workers=4)
     testloader = DataLoader(te_dataset, batch_size=batch_size, num_workers=4)
-    dataloaders_dict = {"train": trainloader, "val": testloader}
-    len_dict = {"train": len(tr_dataset), "val": len(te_dataset)}
+    dataloaders_dict = {"train": trainloader, "valid": testloader}
+    len_dict = {"train": len(tr_dataset), "valid": len(te_dataset)}
 
-    model_ft = MultiBranchCNN(feature_extract, use_pretrained=True, branches=3)
+    model_ft = MultiBranchCNN(False, use_pretrained=True, branches=3)
     model_ft = model_ft.to(device)
     optimizer = optim.AdamW(model_ft.parameters(), lr=1e-4)
 
-    cosine = lambda x, y: 1.0 - F.cosine_similarity(x, y)
-    contrast1 = nn.TripletMarginWithDistanceLoss(distance_function=cosine)
-    contrast2 = nn.TripletMarginWithDistanceLoss(distance_function=cosine)
-
-    model_ft_m, hist = train_model(
+    model_ft_m, _ = train_model(
         model_ft,
         dataloaders_dict,
         criterion,
         optimizer,
         lens=len_dict,
-        num_epochs=num_epochs,
+        num_epochs=epochs,
         mode="multiple",
     )
     test_model(model_ft_m, te_dataset, mode="multiple")
+
