@@ -4,6 +4,6 @@ Implementation Code for the paper submitted to ICIP 2022. For the data we provid
 
 One can train and test a model by running
 ```
-python src/scripts/train.py
+python main.py
 ```
 
