@@ -1,14 +1,9 @@
 import os, pandas as pd
 from src.scripts import train_fold
+from src.utils import *
 
-num_classes = 2
-batch_size = 32
-num_epochs = 50
-k_folds = 10
-data_dir = "data/cropped/"
-feature_extract = False
-optos = False
-mode = "multiple"
+os.makedirs(rest_dir, exist_ok=True)
+logger = rest_dir + f"logger_{len(os.listdir(rest_dir))}.txt"
 
 subjects = []
 metadata = pd.read_csv("/data/avramidi/chla_fundus/metadata.csv")
@@ -20,7 +15,7 @@ for image in image_paths:
 
     subject_row = metadata.loc[metadata["record_id"] == index]
     camera = subject_row[f"{visit}_camera"].values[0]
-    collect_site = subject_row["site"].values[0]
+    collect_site = subject_row["site"].values[0] if index != 52 else 6
 
     if optos and camera != 4:
         continue
@@ -32,7 +27,7 @@ for image in image_paths:
     subjects.append((index, int(label) - 1, collect_site))
 
 for fold in range(k_folds):
-    print("\n------------------------------")
+    print("\n=============================")
     print(f"Fold {fold}")
-    print("------------------------------")
-    train_fold(data_dir, subjects, batch_size, num_epochs, mode, fold)
+    print("=============================")
+    train_fold(subjects, fold, logger)

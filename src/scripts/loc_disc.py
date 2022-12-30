@@ -3,31 +3,11 @@ import matplotlib.pyplot as plt, pandas as pd
 from skimage import measure
 from skimage.exposure import equalize_adapthist
 from tqdm import tqdm
+from src.utils import *
 
 path = "/data/avramidi/chla_fundus/"
 metadata = pd.read_csv(path + "metadata.csv")
 image_paths = [p for p in os.listdir(path) if not p.endswith("csv")]
-
-excluded = [
-    # show atrophy, have resolved PA
-    "198_visit01_photo01.JPG",
-    "211_visit01_photo01.JPG",
-    "224_visit01_photo01.jpg",
-    "224_visit01_photo02.jpg",
-    "224_visit02_photo01.jpg",
-    "224_visit03_photo01.jpg",
-    "224_visit04_photo01.jpg",
-    "224_visit05_photo01.jpg",
-    "224_visit07_photo01.jpg",
-    "224_visit10_photo01.jpg",
-    "235_visit01_photo01.jpg",
-    "235_visit01_photo02.jpg",
-    "235_visit02_photo01.jpg",
-    "235_visit02_photo02.jpg",
-    "235_visit03_photo01.jpg",
-    "235_visit03_photo02.jpg",
-    "307_visit01_photo02.JPG",
-]
 
 optos = []
 for image in image_paths:

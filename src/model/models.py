@@ -27,11 +27,11 @@ class Sub_Adaptor(nn.Module):
 
 
 class SingleBranchCNN(nn.Module):
-    def __init__(self, feature_extract, use_pretrained, subs):
+    def __init__(self, use_pretrained, subs):
         super(SingleBranchCNN, self).__init__()
 
         self.base_net = models.densenet201(pretrained=use_pretrained)
-        set_parameter_requires_grad(self.base_net, feature_extract)
+        set_parameter_requires_grad(self.base_net)
         num_ftrs = self.base_net.classifier.in_features
         self.base_net.classifier = nn.Sequential(
             nn.Dropout(0.5), nn.Linear(num_ftrs, 128)
@@ -46,25 +46,25 @@ class SingleBranchCNN(nn.Module):
 
 
 class MultiBranchCNN(nn.Module):
-    def __init__(self, feature_extract, use_pretrained, subs):
+    def __init__(self, use_pretrained, subs):
         super(MultiBranchCNN, self).__init__()
 
         self.base_net = models.densenet201(pretrained=use_pretrained)
-        set_parameter_requires_grad(self.base_net, feature_extract)
+        set_parameter_requires_grad(self.base_net)
         num_ftrs = self.base_net.classifier.in_features
         self.base_net.classifier = nn.Sequential(
             nn.Dropout(0.5), nn.Linear(num_ftrs, 128)
         )
 
         self.red_net = models.densenet201(pretrained=use_pretrained)
-        set_parameter_requires_grad(self.red_net, feature_extract)
+        set_parameter_requires_grad(self.red_net)
         num_ftrs = self.red_net.classifier.in_features
         self.red_net.classifier = nn.Sequential(
             nn.Dropout(0.5), nn.Linear(num_ftrs, 128)
         )
 
         self.green_net = models.densenet201(pretrained=use_pretrained)
-        set_parameter_requires_grad(self.green_net, feature_extract)
+        set_parameter_requires_grad(self.green_net)
         num_ftrs = self.green_net.classifier.in_features
         self.green_net.classifier = nn.Sequential(
             nn.Dropout(0.5), nn.Linear(num_ftrs, 128)
@@ -84,13 +84,10 @@ class MultiBranchCNN(nn.Module):
         return preds, dd_out
 
 
-def set_parameter_requires_grad(model, feature_extract):
+def set_parameter_requires_grad(model):
     for child in model.children():
         for name, param in child.named_parameters():
-            if feature_extract:
-                param.requires_grad = True
-            else:
-                param.requires_grad = False
-                if name == "denseblock4.denselayer6.conv2.weight":
-                    break
+            param.requires_grad = False
+            if name == "denseblock4.denselayer6.conv2.weight":
+                break
         break
