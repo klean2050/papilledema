@@ -157,32 +157,36 @@ def train_fold(subjects, fold, logger):
     valid_s = [s[0] for s in subjects if s[2] == 6.0]
     y = [s[1] for s in subjects if s[2] != 6.0]
     """
+    for i in list(set(subjects)):
+        train_s = [v[0] for v in list(set(subjects)) if v != i]
+        y = [v[1] for v in list(set(subjects)) if v != i]
+        valid_s = i
 
-    weights = [len(y) / (len(y) - sum(y)), len(y) / sum(y)]
-    weights = torch.tensor(weights).to(device)
-    criterion = nn.CrossEntropyLoss(weight=weights)
+        weights = [len(y) / (len(y) - sum(y)), len(y) / sum(y)]
+        weights = torch.tensor(weights).to(device)
+        criterion = nn.CrossEntropyLoss(weight=weights)
 
-    tr_dataset = PapDataset(data_dir, train_s, train=True)
-    te_dataset = PapDataset(data_dir, valid_s, train=False)
-    trainloader = DataLoader(tr_dataset, batch_size=batch_size, num_workers=4)
-    testloader = DataLoader(te_dataset, batch_size=batch_size, num_workers=4)
+        tr_dataset = PapDataset(data_dir, train_s, train=True)
+        te_dataset = PapDataset(data_dir, valid_s, train=False)
+        trainloader = DataLoader(tr_dataset, batch_size=batch_size, num_workers=4)
+        testloader = DataLoader(te_dataset, batch_size=batch_size, num_workers=4)
 
-    dataloaders_dict = {"train": trainloader, "valid": testloader}
-    len_dict = {"train": len(tr_dataset), "valid": len(te_dataset)}
+        dataloaders_dict = {"train": trainloader, "valid": testloader}
+        len_dict = {"train": len(tr_dataset), "valid": len(te_dataset)}
 
-    subs = max(tr_dataset.sites) if ddloss == "sites" else max(tr_dataset.names)
-    if mode == "single":
-        model_ft = SingleBranchCNN(use_pretrained=True, subs=subs+1)
-    else:
-        model_ft = MultiBranchCNN(use_pretrained=True, subs=subs+1)
-    model_ft = model_ft.to(device)
+        subs = max(tr_dataset.sites) if ddloss == "sites" else max(tr_dataset.names)
+        if mode == "single":
+            model_ft = SingleBranchCNN(use_pretrained=True, subs=subs+1)
+        else:
+            model_ft = MultiBranchCNN(use_pretrained=True, subs=subs+1)
+        model_ft = model_ft.to(device)
 
-    optimizer = optim.AdamW(model_ft.parameters(), lr=1e-4)
-    model, _ = train_model(
-        model_ft,
-        dataloaders_dict,
-        criterion,
-        optimizer,
-        lens=len_dict,
-    )
-    test_model(model, testloader, fold, logger)
+        optimizer = optim.AdamW(model_ft.parameters(), lr=1e-4)
+        model, _ = train_model(
+            model_ft,
+            dataloaders_dict,
+            criterion,
+            optimizer,
+            lens=len_dict,
+        )
+        test_model(model, testloader, fold, logger)
