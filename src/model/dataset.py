@@ -5,6 +5,8 @@ from torch.utils.data import Dataset
 from PIL import Image, ImageEnhance
 from random import uniform
 
+from src.utils import *
+
 
 class PapDataset(Dataset):
     def __init__(self, root, subjects, train):
@@ -39,20 +41,24 @@ class PapDataset(Dataset):
 
         for image in image_paths:
             name = image.split("/")[-1].split(".")[0].split("_")
-            subject_row = metadata.loc[metadata["record_id"] == int(name[0])]
-            collect_site = subject_row["site"].values[0] if int(name[0]) != 52 else 6
-            camera = subject_row["visit01_camera"].values[0]
+            index, visit = int(name[0]), name[1]
+            if first_visit and int(visit[-1]) != 1:
+                continue
+
+            subject_row = metadata.loc[metadata["record_id"] == index]
+            collect_site = subject_row["site"].values[0] if index != 52 else 6
+            camera = subject_row[f"{visit}_camera"].values[0]
+            # discard optos images
             if camera == 4:
-                # discard optos images
                 continue
             label = subject_row["diagnosis"].values[0]
-            if int(name[0]) not in self.subjects:
+            if index not in self.subjects:
                 continue
 
             self.dataset.append(image)
             self.targets.append(int(label) - 1)
             self.sites.append(int(collect_site))
-            self.names.append(int(name[0]))
+            self.names.append(index)
 
     def __len__(self):
         return len(self.dataset)
