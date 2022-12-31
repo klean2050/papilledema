@@ -88,6 +88,6 @@ def set_parameter_requires_grad(model):
     for child in model.children():
         for name, param in child.named_parameters():
             param.requires_grad = False
-            if name == "denseblock4.denselayer6.conv2.weight":
+            if name == "denseblock4.denselayer16.norm1.weight":
                 break
         break
