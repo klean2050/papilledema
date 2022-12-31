@@ -4,7 +4,8 @@
    
 </div>
 
-Implementation Code for the USC-CHLA project. One can train and test a model by running
+Implementation of USC-CHLA project. Experimental config can be found at ```src/utils/util.py```.
+One can train and test a model by running the following command.
 ```
 python main.py
 ```

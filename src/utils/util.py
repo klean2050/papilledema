@@ -15,7 +15,7 @@ first_visit = False
 num_epochs = 50
 batch_size = 32
 learning_r = 1e-4
-ddloss = "names"  # names or None
+ddloss = "names"
 mode = "multiple"
 
 excluded = [
