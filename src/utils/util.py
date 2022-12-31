@@ -1,18 +1,22 @@
-import os, torch
-
-batch_size = 32
-num_epochs = 50
-k_folds = 10
-optos = False
-mode = "multiple"
-ddloss = "sites"
-
+# path parameters
 data_dir = "data/cropped/"
 rest_dir = "results/"
-test_size = 0.15
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# split parameters
+optos = False
+n_turns = 5
+k_folds = 10
+test_size = 0.2
+per_site = False
+test_site = 6.0
+first_visit = False
+
+# train parameters
+num_epochs = 50
+batch_size = 32
+learning_r = 1e-4
+ddloss = "names"  # names or None
+mode = "multiple"
 
 excluded = [
     # show atrophy, have resolved PA
