@@ -11,7 +11,7 @@ from sklearn.metrics import classification_report, roc_auc_score, accuracy_score
 from src.model import *
 from src.utils import *
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 

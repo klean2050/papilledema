@@ -15,7 +15,7 @@ first_visit = False
 num_epochs = 50
 batch_size = 32
 learning_r = 1e-4
-ddloss = "names"
+ddloss = "sites"
 mode = "multiple"
 
 excluded = [
