@@ -11,9 +11,13 @@ from sklearn.metrics import classification_report, roc_auc_score, accuracy_score
 from src.model import *
 from src.utils import *
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def train_model(model, dataloaders, criterion, optimizer, lens):
 
+def train_model(model, dataloaders, criterion, lens):
+
+    optimizer = optim.AdamW(model.parameters(), lr=learning_r)
     val_acc_history, patience, best_loss = [], 5, 5
     best_model_wts = copy.deepcopy(model.state_dict())
 
@@ -82,7 +86,7 @@ def train_model(model, dataloaders, criterion, optimizer, lens):
     return model, val_acc_history
 
 
-def test_model(model, loader, fold, logger):
+def test_model(model, loader):
 
     model.eval()
     outs, targets = [], []
@@ -96,22 +100,11 @@ def test_model(model, loader, fold, logger):
             outs.extend(out.cpu().detach().numpy())
             targets.extend(labels.cpu().detach().numpy())
 
-    def calc_ci(num):
-        ci = np.sqrt((num * (1 - num)) / len(outs))
-        ci = np.clip(1.96 * ci, 0, 1)
-        return "95% CI, {:.1f} to {:.1f}".format(100.0 * (num - ci), 100 * (num + ci))
-
     auc = roc_auc_score(targets, outs)
     acc = accuracy_score(targets, outs)
     report = classification_report(targets, outs, output_dict=True)
     sns, spc = report["0"]["recall"], report["1"]["recall"]
-
-    with open(logger, "a") as f:
-        f.write("Fold " + str(fold))
-        f.write("\nAUC: {:.1f}% ({})".format(100.0 * auc, calc_ci(auc)))
-        f.write("\nAccuracy: {:.1f}% ({})".format(100.0 * acc, calc_ci(acc)))
-        f.write("\nSensitivity: {:.1f}% ({})".format(100.0 * sns, calc_ci(sns)))
-        f.write("\nSpecificity: {:.1f}% ({})\n\n".format(100.0 * spc, calc_ci(spc)))
+    return auc, acc, sns, spc
 
 
 def get_saliency(model, dataset):
@@ -145,22 +138,21 @@ def get_saliency(model, dataset):
 
 def train_fold(subjects, fold, logger):
 
-    train_s, valid_s, y, _ = train_test_split(
-        [v[0] for v in list(set(subjects))],
-        [v[1] for v in list(set(subjects))],
-        test_size=test_size,
-        random_state=fold * 43,
-    )
+    # repeat each fold for robustness
+    aucs, accs, snss, spcs = [], [], [], []
+    for _ in range(n_turns):
 
-    """
-    train_s = [s[0] for s in subjects if s[2] != 6.0]
-    valid_s = [s[0] for s in subjects if s[2] == 6.0]
-    y = [s[1] for s in subjects if s[2] != 6.0]
-    """
-    for i in list(set(subjects)):
-        train_s = [v[0] for v in list(set(subjects)) if v != i]
-        y = [v[1] for v in list(set(subjects)) if v != i]
-        valid_s = i
+        if per_site:
+            train_s = [s[0] for s in subjects if s[2] != test_site]
+            valid_s = [s[0] for s in subjects if s[2] == test_site]
+            y = [s[1] for s in subjects if s[2] != test_site]
+        else:
+            train_s, valid_s, y, _ = train_test_split(
+                [v[0] for v in list(set(subjects))],
+                [v[1] for v in list(set(subjects))],
+                test_size=test_size,
+                random_state=fold * 43,
+            )
 
         weights = [len(y) / (len(y) - sum(y)), len(y) / sum(y)]
         weights = torch.tensor(weights).to(device)
@@ -176,17 +168,27 @@ def train_fold(subjects, fold, logger):
 
         subs = max(tr_dataset.sites) if ddloss == "sites" else max(tr_dataset.names)
         if mode == "single":
-            model_ft = SingleBranchCNN(use_pretrained=True, subs=subs+1)
+            model_ft = SingleBranchCNN(use_pretrained=True, subs=subs + 1)
         else:
-            model_ft = MultiBranchCNN(use_pretrained=True, subs=subs+1)
+            model_ft = MultiBranchCNN(use_pretrained=True, subs=subs + 1)
         model_ft = model_ft.to(device)
 
-        optimizer = optim.AdamW(model_ft.parameters(), lr=1e-4)
         model, _ = train_model(
             model_ft,
             dataloaders_dict,
             criterion,
-            optimizer,
             lens=len_dict,
         )
-        test_model(model, testloader, fold, logger)
+        auc, acc, sns, spc = test_model(model, testloader)
+        aucs.append(100 * auc)
+        accs.append(100 * acc)
+        snss.append(100 * sns)
+        spcs.append(100 * spc)
+
+    # log the mean metrics for each fold
+    with open(logger, "a") as f:
+        f.write("Fold " + str(fold))
+        f.write("\nAUC: {:.1f}".format(np.mean(aucs)))
+        f.write("\nAcc: {:.1f}".format(np.mean(accs)))
+        f.write("\nSen: {:.1f}".format(np.mean(snss)))
+        f.write("\nSpe: {:.1f}\n\n".format(np.mean(spcs)))
