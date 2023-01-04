@@ -11,6 +11,7 @@ from src.utils import *
 class PapDataset(Dataset):
     def __init__(self, root, subjects, train):
         self.root_dir = root
+        self.severity = severity
         self.dataset, self.targets = [], []
         self.names, self.sites = [], []
         self.subjects = subjects
@@ -37,6 +38,9 @@ class PapDataset(Dataset):
         )
 
         metadata = pd.read_csv("/data/avramidi/chla_fundus/metadata.csv")
+        sev_file = pd.read_csv(
+            "/data/avramidi/chla_fundus/consensus_grades_severity.csv"
+        )
         image_paths = [self.root_dir + path for path in os.listdir(self.root_dir)]
 
         for image in image_paths:
@@ -55,6 +59,19 @@ class PapDataset(Dataset):
             if index not in self.subjects:
                 continue
 
+            # check severity of papilledema photos
+            if int(label) == 1:
+                try:
+                    this_severity = sev_file.loc[
+                        sev_file["original name"] == image.split("/")[-1]
+                    ]["consensus_grade"].values[0]
+                except:
+                    continue
+                if severity == "mild" and this_severity > 2:
+                    continue
+                if severity == "severe" and this_severity < 3:
+                    continue
+
             self.dataset.append(image)
             self.targets.append(int(label) - 1)
             self.sites.append(int(collect_site))
@@ -72,6 +89,18 @@ class PapDataset(Dataset):
             sample[s] = self.transform(sample[s])
 
         return sample, self.targets[idx], self.names[idx], self.sites[idx]
+
+    def get_ratio(self):
+        ratio = sum(self.targets) / (len(self.targets) - sum(self.targets))
+        return np.sqrt(ratio)
+
+    def to_csv(self):
+        df = pd.DataFrame()
+        df["subject"] = self.names
+        df["filename"] = self.dataset
+        df["site"] = self.sites
+        df["label"] = self.targets
+        return df
 
     def apply_transforms(self, img):
 
