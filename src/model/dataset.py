@@ -92,7 +92,7 @@ class PapDataset(Dataset):
 
     def get_ratio(self):
         ratio = sum(self.targets) / (len(self.targets) - sum(self.targets))
-        return np.sqrt(ratio)
+        return ratio
 
     def to_csv(self):
         df = pd.DataFrame()

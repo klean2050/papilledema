@@ -1,15 +1,17 @@
-# path parameters
+# system parameters
 data_dir = "data/cropped/"
 rest_dir = "results/"
+devices = "0"
 
 # split parameters
 optos = False
-n_turns = 5
+n_turns = 5  # should be 1 if per_site = True
 k_folds = 10
 test_size = 0.2
 per_site = False
-test_site = 6.0
+test_site = 1.0  # should be in [1.0, 2.0, 5.0, 6.0]
 first_visit = False
+severity = "none"
 
 # train parameters
 num_epochs = 50

@@ -11,7 +11,7 @@ from sklearn.metrics import classification_report, roc_auc_score, accuracy_score
 from src.model import *
 from src.utils import *
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = devices
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -48,7 +48,7 @@ def train_model(model, dataloaders, criterion, lens):
 
                     ce_loss = criterion(outputs, labels)
                     dd_crt = nn.CrossEntropyLoss()
-                    if ddloss == "sites":
+                    if ddloss == "sites" and phase == "train":
                         dd_loss = dd_crt(dd_out, sites)
                     elif ddloss == "names":
                         dd_loss = dd_crt(dd_out, names)
@@ -145,18 +145,13 @@ def train_fold(subjects, fold, logger):
         if per_site:
             train_s = [s[0] for s in subjects if s[2] != test_site]
             valid_s = [s[0] for s in subjects if s[2] == test_site]
-            y = [s[1] for s in subjects if s[2] != test_site]
         else:
-            train_s, valid_s, y, _ = train_test_split(
+            train_s, valid_s, _, _ = train_test_split(
                 [v[0] for v in list(set(subjects))],
                 [v[1] for v in list(set(subjects))],
                 test_size=test_size,
                 random_state=fold * 43,
             )
-
-        weights = [len(y) / (len(y) - sum(y)), len(y) / sum(y)]
-        weights = torch.tensor(weights).to(device)
-        criterion = nn.CrossEntropyLoss(weight=weights)
 
         tr_dataset = PapDataset(data_dir, train_s, train=True)
         te_dataset = PapDataset(data_dir, valid_s, train=False)
@@ -172,6 +167,11 @@ def train_fold(subjects, fold, logger):
         else:
             model_ft = MultiBranchCNN(use_pretrained=True, subs=subs + 1)
         model_ft = model_ft.to(device)
+
+        # loss function with class weights
+        r = tr_dataset.get_ratio()
+        weights = torch.tensor([r, 1 / r]).to(device)
+        criterion = nn.CrossEntropyLoss(weight=weights)
 
         model, _ = train_model(
             model_ft,
