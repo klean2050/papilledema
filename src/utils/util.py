@@ -1,15 +1,15 @@
 # system parameters
 data_dir = "data/cropped/"
 rest_dir = "results/"
-devices = "0"
+devices = "1"
 
 # split parameters
 optos = False
-n_turns = 5  # should be 1 if per_site = True
+n_turns = 3  # should be 1 if per_site = True
 k_folds = 10
 test_size = 0.2
 per_site = False
-test_site = 1.0  # should be in [1.0, 2.0, 5.0, 6.0]
+test_site = 6.0  # should be in [1.0, 2.0, 5.0, 6.0]
 first_visit = False
 severity = "none"
 
@@ -39,4 +39,10 @@ excluded = [
     "235_visit03_photo01.jpg",
     "235_visit03_photo02.jpg",
     "307_visit01_photo02.JPG",
+    # new excluded photos
+    "41_visit03_photo01.jpg",
+    "58_visit03_photo01.jpg",
+    "224_visit05_photo02.jpg",
+    "247_visit01_photo01.jpg",
+    "277_visit03_photo01.JPG",
 ]

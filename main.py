@@ -1,14 +1,14 @@
-import os, pandas as pd
+import os, pandas as pd, pickle
 from src.scripts import train_fold
 from src.utils import *
 
 os.makedirs(rest_dir, exist_ok=True)
 logger = rest_dir + f"logger_{len(os.listdir(rest_dir))}.txt"
 
-subjects = []
+subjects, raw = [], {}
 metadata = pd.read_csv("/data/avramidi/chla_fundus/metadata.csv")
 sev_file = pd.read_csv("/data/avramidi/chla_fundus/consensus_grades_severity.csv")
-image_paths = [data_dir + path for path in os.listdir(data_dir)]
+image_paths = [data_dir + path for path in os.listdir(data_dir) if path not in excluded]
 
 for image in image_paths:
     name = image.split("/")[-1].split(".")[0].split("_")
@@ -42,4 +42,7 @@ for fold in range(k_folds):
     print("\n=============================")
     print(f"Fold {fold}")
     print("=============================")
-    train_fold(subjects, fold, logger)
+    raw = train_fold(subjects, fold, logger, raw)
+
+with open("saved_dict_new.pkl", "wb") as f:
+    pickle.dump(raw, f)
