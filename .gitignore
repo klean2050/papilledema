@@ -10,6 +10,8 @@ __pycache__/
 .Python
 build/
 data/
+predictions/
+saliency/
 results/
 develop-eggs/
 dist/
