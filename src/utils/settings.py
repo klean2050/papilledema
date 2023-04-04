@@ -1,6 +1,6 @@
 # system parameters
 data_dir = "data/cropped/"
-rest_dir = "results/"
+rest_dir = "logging/"
 devices = "1"
 
 # split parameters

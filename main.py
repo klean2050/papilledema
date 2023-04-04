@@ -1,6 +1,5 @@
 import os, pandas as pd, pickle
-from src.scripts import train_fold
-from src.utils import *
+from src import *
 
 os.makedirs(rest_dir, exist_ok=True)
 logger = rest_dir + f"logger_{len(os.listdir(rest_dir))}.txt"
@@ -44,5 +43,10 @@ for fold in range(k_folds):
     print("=============================")
     raw = train_fold(subjects, fold, logger, raw)
 
-with open("saved_dict_new.pkl", "wb") as f:
-    pickle.dump(raw, f)
+csv_data = pd.DataFrame()
+csv_data["image"] = list(raw.keys())
+labels = [v[0][1] for _, v in raw.items()]
+
+csv_data["PA_proba"] = [v[0][0] for _, v in raw.items()]
+csv_data["PA_label"] = [False if l else True for l in labels]
+csv_data.to_csv("saved_dict_new.csv")

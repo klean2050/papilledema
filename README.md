@@ -4,9 +4,9 @@
    
 </div>
 
-Implementation of USC-CHLA project. Experimental config can be found at ```src/utils/util.py```.
+Implementation of USC-CHLA project. Experimental config can be found at ```src/utils/settings.py```.
 
-One can train and test a model by running the following command.
+You can train and test the model by running the following command:
 ```
 python main.py
 ```

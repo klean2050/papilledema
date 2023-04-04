@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from PIL import Image, ImageEnhance
 from random import uniform
 
-from src.utils import *
+from .utils import *
 
 
 class PapDataset(Dataset):

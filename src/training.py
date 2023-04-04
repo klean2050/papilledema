@@ -8,7 +8,9 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, roc_auc_score, accuracy_score
 
-from src import *
+from .utils import *
+from .models import *
+from .dataset import PapDataset
 
 os.environ["CUDA_VISIBLE_DEVICES"] = devices
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

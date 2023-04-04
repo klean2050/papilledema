@@ -69,19 +69,6 @@ def get_results(logger):
     return auc, acc, sns, spc
 
 
-def get_predictions(pkl_path):
-    with open(pkl_path, "rb") as f:
-        data = pickle.load(f)
-
-    csv_data = pd.DataFrame()
-    csv_data["image"] = list(data.keys())
-    labels = [v[0][1] for _, v in data.items()]
-
-    csv_data["PA_proba"] = [v[0][0] for _, v in data.items()]
-    csv_data["PA_label"] = [False if l else True for l in labels]
-    csv_data.to_csv(pkl_path.replace("pkl", "csv"))
-
-
 def plot_roc_curve(csv_path):
     data = pd.read_csv(csv_path)
     fpr, tpr, t = roc_curve(data["PA_label"], data["PA_proba"])

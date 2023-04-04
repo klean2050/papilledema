@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt, pandas as pd
 from skimage import measure
 from skimage.exposure import equalize_adapthist
 from tqdm import tqdm
-from src.utils import *
+from .settings import *
 
 path = "/data/avramidi/chla_fundus/"
 metadata = pd.read_csv(path + "metadata.csv")
