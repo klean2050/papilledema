@@ -5,11 +5,12 @@ devices = "1"
 
 # split parameters
 optos = False
-n_turns = 3  # should be 1 if per_site = True
-k_folds = 10
+n_turns = 5
+k_folds = 1
 test_size = 0.2
-per_site = False
-test_site = 6.0  # should be in [1.0, 2.0, 5.0, 6.0]
+per_site = True
+external = False
+test_site = 1.0  # should be in [1.0, 2.0, 5.0, 6.0]
 first_visit = False
 severity = "none"
 
