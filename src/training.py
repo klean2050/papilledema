@@ -5,7 +5,7 @@ import os, copy, numpy as np
 import matplotlib.pyplot as plt, cv2 as cv
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
 from sklearn.metrics import classification_report, roc_auc_score, accuracy_score
 
 from .utils import *
@@ -168,12 +168,27 @@ def train_fold(subjects, fold, logger, raw):
         if per_site:
             train_s = [s[0] for s in subjects if s[2] != test_site]
             valid_s = [s[0] for s in subjects if s[2] == test_site]
+        elif external:
+            sss = StratifiedShuffleSplit(
+                n_splits=1,
+                test_size=test_size,
+                random_state=29011997
+            )
+            train_i, valid_i = next(
+                sss.split(
+                    [v[0] for v in subjects],
+                    [v[1] for v in subjects],
+                    groups=[v[2] for v in subjects]
+                )
+            )
+            train_s = [subjects[i][0] for i in train_i]
+            valid_s = [subjects[i][0] for i in valid_i]
         else:
             train_s, valid_s, _, _ = train_test_split(
-                [v[0] for v in list(set(subjects))],
-                [v[1] for v in list(set(subjects))],
+                [v[0] for v in subjects],
+                [v[1] for v in subjects],
                 test_size=test_size,
-                random_state=fold * 43,
+                random_state=fold * 44,
             )
 
         tr_dataset = PapDataset(data_dir, train_s, train=True)
